@@ -11,8 +11,6 @@ from ..http import parse_etags
 from ..http import parse_if_range_header
 from ..http import unquote_etag
 
-_etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
-
 
 def is_resource_modified(
     http_range: str | None = None,

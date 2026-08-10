@@ -1007,7 +1007,17 @@ def unquote_etag(
 
 
 _etag_re = re.compile(
-    r'([Ww]/)?(?:"([^"]*)"|([^" \t,]+))(?:[ \t]*,[ \t]*)?', flags=re.ASCII
+    r"""
+    (?:^|[ \t]*,[ \t]*)  # start or preceded by comma
+    ([Ww]/)?  # optional weak marker
+    (?:
+        "([^"]*)"  # quoted value
+    |
+        ([^" \t,]+)  # invalid unquoted value, exclude syntax characters
+    )
+    (?=[ \t]*,[ \t]*|$)  # only if followed by comma or end
+    """,
+    flags=re.ASCII | re.VERBOSE,
 )
 
 
