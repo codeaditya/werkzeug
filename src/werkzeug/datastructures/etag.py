@@ -11,11 +11,7 @@ _etag_re = re.compile(
     r"""
     (?:^|[ \t]*,[ \t]*)  # start or preceded by comma
     ([Ww]/)?  # optional weak marker
-    (?:
-        "([^"]*)"  # quoted value
-    |
-        ([^" \t,]+)  # invalid unquoted value, exclude syntax characters
-    )
+    "([^"]*)"  # quoted value
     (?=[ \t]*,[ \t]*|$)  # only if followed by comma or end
     """,
     flags=re.ASCII | re.VERBOSE,
@@ -23,8 +19,9 @@ _etag_re = re.compile(
 
 
 class ETags(cabc.Collection[str]):
-    """A set that can be used to check if one etag is present in a collection
-    of etags.
+    """A collection of ETag values parsed from headers such as ``If-Match`` and
+    ``If-None-Match``. Use :func:`.unquote_etag` to parse a header that only
+    has a single value.
     """
 
     def __init__(
@@ -75,14 +72,20 @@ class ETags(cabc.Collection[str]):
         otherwise strong only."""
         from ..http import unquote_etag
 
-        etag, weak = unquote_etag(etag)
+        value, weak = unquote_etag(etag)
+
+        if value is None or weak is None:
+            return False
+
         if weak:
-            return self.contains_weak(etag)
-        return self.contains(etag)
+            return self.contains_weak(value)
+
+        return self.contains(value)
 
     @classmethod
     def from_header(cls, value: str | None) -> te.Self:
         """Parse a header value and create an instance of this class.
+        Invalid items are discarded.
 
         .. versionadded:: 3.2
         """
@@ -96,12 +99,12 @@ class ETags(cabc.Collection[str]):
         weak = []
 
         for match in _etag_re.finditer(value):
-            is_weak, tag, invalid_unquoted = match.groups()
+            is_weak, tag = match.groups()
 
             if is_weak:
-                weak.append(tag or invalid_unquoted)
+                weak.append(tag)
             else:
-                strong.append(tag or invalid_unquoted)
+                strong.append(tag)
 
         return cls(strong, weak)
 

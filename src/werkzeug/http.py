@@ -1033,21 +1033,32 @@ def quote_etag(etag: str, weak: bool = False) -> str:
 
 
 @t.overload
-def unquote_etag(etag: str) -> tuple[str, bool]: ...
+def unquote_etag(etag: str) -> tuple[str, bool] | tuple[None, None]: ...
 @t.overload
 def unquote_etag(etag: None) -> tuple[None, None]: ...
 def unquote_etag(
     etag: str | None,
 ) -> tuple[str, bool] | tuple[None, None]:
-    """Unquote a single etag:
+    """Parse a valid single etag. A valid etag must be quoted and may have an
+    optional weak ``W/`` prefix.
 
-    >>> unquote_etag('W/"bar"')
-    ('bar', True)
-    >>> unquote_etag('"bar"')
-    ('bar', False)
+    .. code-block:: pycon
 
-    :param etag: the etag identifier to unquote.
-    :return: a ``(etag, weak)`` tuple.
+        >>> unquote_etag('"strong"')
+        ('strong', False)
+        >>> unquote_etag('W/"weak"')
+        ('weak', True)
+        >>> unquote_etag('no_quotes')
+        (None, None)
+
+    Use :meth:`.ETags.from_header` to parse a list of etag values.
+
+    :param etag: A valid etag to unquote.
+    :return: A tuple ``(value, weak)``, or ``(None, None)`` if the
+        value is empty or invalid.
+
+    .. versionchanged:: 3.2
+        Does not accept invalid unquoted values.
     """
     if not etag:
         return None, None
@@ -1059,11 +1070,11 @@ def unquote_etag(
         weak = True
         start = 2
 
-    if etag.startswith('"', start) and etag.endswith('"', start):
-        return etag[start + 1 : -1], weak
+    if not (etag.startswith('"', start) and etag.endswith('"', start)):
+        # invalid, value must be quoted
+        return None, None
 
-    # invalid unquoted
-    return etag[start:], weak
+    return etag[start + 1 : -1], weak
 
 
 def _parse_etags(value: str | None) -> ds.ETags:
@@ -1074,6 +1085,9 @@ def _parse_etags(value: str | None) -> ds.ETags:
 
     .. deprecated:: 3.2
         Will be removed in Werkzeug 3.3. Use the 'ETags.from_header' method instead.
+
+    .. versionchanged:: 3.2
+        Does not accept invalid unquoted values.
     """
     import warnings
 
