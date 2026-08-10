@@ -9,8 +9,6 @@ from ..http import generate_etag
 from ..http import parse_date
 from ..http import unquote_etag
 
-_etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
-
 
 def is_resource_modified(
     http_range: str | None = None,
