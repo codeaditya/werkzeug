@@ -7,7 +7,6 @@ from datetime import datetime
 from .._internal import _dt_as_utc
 from ..http import generate_etag
 from ..http import parse_date
-from ..http import quote_etag
 from ..http import unquote_etag
 
 _etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
@@ -41,7 +40,7 @@ def is_resource_modified(
     .. versionadded:: 2.2
     """
     if etag is None and data is not None:
-        etag = quote_etag(generate_etag(data))
+        etag = f'"{generate_etag(data)}"'
     elif data is not None:
         raise TypeError("both data and etag given")
 
