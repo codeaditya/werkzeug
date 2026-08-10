@@ -420,7 +420,7 @@ def test_etag_request():
     assert request.cache_control.no_cache
 
     for etags in request.if_match, request.if_none_match:
-        assert etags("bar")
+        assert etags("baz")
         assert etags.contains_raw('W/"foo"')
         assert etags.contains_weak("foo")
         assert not etags.contains("foo")

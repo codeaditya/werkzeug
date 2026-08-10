@@ -69,7 +69,9 @@ def is_resource_modified(
     if etag:
         etag, _ = unquote_etag(etag)
 
-        if if_range is not None and if_range.etag is not None:
+        if etag is None:
+            unmodified = False
+        elif if_range is not None and if_range.etag is not None:
             unmodified = if_range.etag == etag
         else:
             # https://tools.ietf.org/html/rfc7232#section-3.2
