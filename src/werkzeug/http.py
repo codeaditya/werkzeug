@@ -1026,8 +1026,8 @@ def parse_etags(value: str | None) -> ds.ETags:
     strong = []
     weak = []
 
-    for match in _etag_re.findall(value):
-        is_weak, tag, invalid_unquoted = match
+    for match in _etag_re.finditer(value):
+        is_weak, tag, invalid_unquoted = match.groups()
 
         if is_weak:
             weak.append(tag or invalid_unquoted)
