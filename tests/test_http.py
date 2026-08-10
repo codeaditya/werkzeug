@@ -423,12 +423,16 @@ class TestHTTPUtility:
 
         # any method is allowed
         env["REQUEST_METHOD"] = "POST"
-        assert http.is_resource_modified(env, etag="testing")
+        assert http.is_resource_modified(env)
         env["REQUEST_METHOD"] = "GET"
 
-        # etagify from data
-        pytest.raises(TypeError, http.is_resource_modified, env, data="42", etag="23")
-        env["HTTP_IF_NONE_MATCH"] = http.generate_etag(b"awesome")
+        # only one of etag or data
+        with pytest.raises(TypeError):
+            http.is_resource_modified(env, data=b"42", etag='"23"')
+
+        etag = http.quote_etag(http.generate_etag(b"awesome"))
+        env["HTTP_IF_NONE_MATCH"] = etag
+        assert not http.is_resource_modified(env, etag=etag)
         assert not http.is_resource_modified(env, data=b"awesome")
 
         env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(datetime(2008, 1, 1, 12, 30))
@@ -443,7 +447,7 @@ class TestHTTPUtility:
         env = create_environ()
 
         env["HTTP_IF_MODIFIED_SINCE"] = http.http_date(datetime(2008, 1, 1, 12, 30))
-        env["HTTP_IF_RANGE"] = http.generate_etag(b"awesome_if_range")
+        env["HTTP_IF_RANGE"] = http.quote_etag(http.generate_etag(b"awesome_if_range"))
         # Range header not present, so If-Range should be ignored
         assert not http.is_resource_modified(
             env,
@@ -613,10 +617,10 @@ class TestRange:
         assert rv.to_header() == ""
 
         # broken etags are supported too
-        rv = IfRange.from_header("unquoted")
-        assert rv.etag == "unquoted"
+        rv = IfRange.from_header("invalid_unquoted")
+        assert rv.etag == "invalid_unquoted"
         assert rv.date is None
-        assert rv.to_header() == '"unquoted"'
+        assert rv.to_header() == '"invalid_unquoted"'
 
         rv = IfRange.from_header("Thu, 01 Jan 1970 00:00:00 GMT")
         assert rv.etag is None

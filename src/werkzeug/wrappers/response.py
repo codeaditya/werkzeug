@@ -640,16 +640,15 @@ class Response(_SansIOResponse):
         """Return ``True`` if `Range` header is present and if underlying
         resource is considered unchanged when compared with `If-Range` header.
         """
-        return (
+        return "HTTP_RANGE" in environ and (
             "HTTP_IF_RANGE" not in environ
             or not is_resource_modified(
                 environ,
                 self.headers.get("ETag"),
-                None,
-                self.headers.get("Last-Modified"),
+                last_modified=self.headers.get("Last-Modified"),
                 ignore_if_range=False,
             )
-        ) and "HTTP_RANGE" in environ
+        )
 
     def _process_range_request(
         self,
@@ -766,8 +765,7 @@ class Response(_SansIOResponse):
             if not is206 and not is_resource_modified(
                 environ,
                 self.headers.get("ETag"),
-                None,
-                self.headers.get("Last-Modified"),
+                last_modified=self.headers.get("Last-Modified"),
             ):
                 if ETags.from_header(environ.get("HTTP_IF_MATCH")):
                     self.status_code = 412

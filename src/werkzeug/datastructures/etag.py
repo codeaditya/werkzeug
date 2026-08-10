@@ -7,7 +7,9 @@ import typing as t
 if t.TYPE_CHECKING:
     import typing_extensions as te
 
-_etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
+_etag_re = re.compile(
+    r'([Ww]/)?(?:"([^"]*)"|([^" \t,]+))(?:[ \t]*,[ \t]*)?', flags=re.ASCII
+)
 
 
 class ETags(cabc.Collection[str]):
@@ -77,29 +79,19 @@ class ETags(cabc.Collection[str]):
         if not value:
             return cls()
 
+        if value == "*":
+            return cls(star_tag=True)
+
         strong = []
         weak = []
-        end = len(value)
-        pos = 0
 
-        while pos < end:
-            if (match := _etag_re.match(value, pos)) is None:
-                break
-
-            is_weak, quoted, raw = match.groups()
-
-            if raw == "*":
-                return cls(star_tag=True)
-
-            if quoted:
-                raw = quoted
+        for match in _etag_re.finditer(value):
+            is_weak, tag, invalid_unquoted = match.groups()
 
             if is_weak:
-                weak.append(raw)
+                weak.append(tag or invalid_unquoted)
             else:
-                strong.append(raw)
-
-            pos = match.end()
+                strong.append(tag or invalid_unquoted)
 
         return cls(strong, weak)
 
