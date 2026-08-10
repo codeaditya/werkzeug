@@ -9,6 +9,7 @@ Unreleased
 -   ``uri_to_iri`` and ``iri_to_uri`` preserve empty username, password, and
     port 0. :issue:`3189`
 -   Improve performance of ``parse_options_header``.
+-   Improve performance of ``parse_etags``.
 
 
 Version 3.1.8

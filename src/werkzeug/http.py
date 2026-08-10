@@ -25,7 +25,6 @@ if t.TYPE_CHECKING:
 _token_chars = frozenset(
     "!#$%&'*+-.0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ^_`abcdefghijklmnopqrstuvwxyz|~"
 )
-_etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
 _entity_headers = frozenset(
     [
         "allow",
@@ -966,10 +965,11 @@ def quote_etag(etag: str, weak: bool = False) -> str:
     """
     if '"' in etag:
         raise ValueError("invalid etag")
-    etag = f'"{etag}"'
+
     if weak:
-        etag = f"W/{etag}"
-    return etag
+        return f'W/"{etag}"'
+
+    return f'"{etag}"'
 
 
 @t.overload
@@ -991,14 +991,24 @@ def unquote_etag(
     """
     if not etag:
         return None, None
-    etag = etag.strip()
+
     weak = False
+    start = 0
+
     if etag.startswith(("W/", "w/")):
         weak = True
-        etag = etag[2:]
-    if etag[:1] == etag[-1:] == '"':
-        etag = etag[1:-1]
-    return etag, weak
+        start = 2
+
+    if etag.startswith('"', start) and etag.endswith('"', start):
+        return etag[start + 1 : -1], weak
+
+    # invalid unquoted
+    return etag[start:], weak
+
+
+_etag_re = re.compile(
+    r'([Ww]/)?(?:"([^"]*)"|([^" \t,]+))(?:[ \t]*,[ \t]*)?', flags=re.ASCII
+)
 
 
 def parse_etags(value: str | None) -> ds.ETags:
@@ -1009,24 +1019,21 @@ def parse_etags(value: str | None) -> ds.ETags:
     """
     if not value:
         return ds.ETags()
+
+    if value == "*":
+        return ds.ETags(star_tag=True)
+
     strong = []
     weak = []
-    end = len(value)
-    pos = 0
-    while pos < end:
-        match = _etag_re.match(value, pos)
-        if match is None:
-            break
-        is_weak, quoted, raw = match.groups()
-        if raw == "*":
-            return ds.ETags(star_tag=True)
-        elif quoted:
-            raw = quoted
+
+    for match in _etag_re.findall(value):
+        is_weak, tag, invalid_unquoted = match
+
         if is_weak:
-            weak.append(raw)
+            weak.append(tag or invalid_unquoted)
         else:
-            strong.append(raw)
-        pos = match.end()
+            strong.append(tag or invalid_unquoted)
+
     return ds.ETags(strong, weak)
 
 

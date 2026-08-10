@@ -9,6 +9,7 @@ from ..http import generate_etag
 from ..http import parse_date
 from ..http import parse_etags
 from ..http import parse_if_range_header
+from ..http import quote_etag
 from ..http import unquote_etag
 
 _etag_re = re.compile(r'([Ww]/)?(?:"(.*?)"|(.*?))(?:\s*,\s*|$)')
@@ -42,7 +43,7 @@ def is_resource_modified(
     .. versionadded:: 2.2
     """
     if etag is None and data is not None:
-        etag = generate_etag(data)
+        etag = quote_etag(generate_etag(data))
     elif data is not None:
         raise TypeError("both data and etag given")
 
@@ -74,7 +75,7 @@ def is_resource_modified(
         etag, _ = unquote_etag(etag)
 
         if if_range is not None and if_range.etag is not None:
-            unmodified = parse_etags(if_range.etag).contains(etag)
+            unmodified = if_range.etag == etag
         else:
             if_none_match = parse_etags(http_if_none_match)
             if if_none_match:
