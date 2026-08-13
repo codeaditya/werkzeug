@@ -10,6 +10,7 @@ Unreleased
     port 0. :issue:`3189`
 -   Improve performance of ``parse_options_header``.
 -   Improve performance of ``parse_etags``.
+-   ``get_host`` also checks that the port is in the valid range.
 
 
 Version 3.1.8
