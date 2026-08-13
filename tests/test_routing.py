@@ -1,4 +1,5 @@
 import gc
+import sys
 import typing as t
 import uuid
 
@@ -749,6 +750,20 @@ def test_default_converters():
     assert a.match("/b/2") == ("b", {"b": "2"})
     assert a.match("/c/3") == ("c", {"c": "3"})
     assert "foo" not in r.Map.default_converters
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        pytest.param("1" * (sys.get_int_max_str_digits() + 1), id="int_max_str_digits"),
+    ],
+)
+def test_int_converter_404(value: str) -> None:
+    m = r.Map([r.Rule("/<int:a>", endpoint="a")])
+    a = m.bind("a.test")
+
+    with pytest.raises(NotFound):
+        a.match(f"/{value}")
 
 
 def test_uuid_converter():
