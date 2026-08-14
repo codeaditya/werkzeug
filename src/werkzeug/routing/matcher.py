@@ -194,8 +194,8 @@ class StateMachineMatcher:
             for name, value in zip(rule._converters.keys(), values, strict=True):
                 try:
                     value = rule._converters[name].to_python(value)
-                except ValidationError:
-                    raise NoMatch(have_match_for, websocket_mismatch) from None
+                except ValidationError as e:
+                    raise NoMatch(have_match_for, websocket_mismatch) from e
                 result[str(name)] = value
             if rule.defaults:
                 result.update(rule.defaults)

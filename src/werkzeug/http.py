@@ -648,6 +648,9 @@ def parse_options_header(value: str | None) -> tuple[str, dict[str, str]]:
                     else:
                         # Consume any other character.
                         quote_pos += 1
+                else:
+                    # Scanned all without finding closing quote.
+                    break
 
         # Continue to the next delimited part, skipping spaces.
         if m_delim := _parameter_delimiter_re.search(rest, scan_pos):
